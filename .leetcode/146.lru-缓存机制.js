@@ -8,6 +8,10 @@
 /**
  * @param {number} capacity
  */
+function ListNode(val, next) {
+  this.val = (val===undefined ? 0 : val)
+  this.next = (next===undefined ? null : next)
+}
 var LRUCache = function(capacity) {
   this.maxCapacity = capacity
   this.currentLength = 0
