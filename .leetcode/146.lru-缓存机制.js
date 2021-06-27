@@ -8,35 +8,53 @@
 /**
  * @param {number} capacity
  */
-function ListNode(val, next) {
+function ListNode(val, key, next, pre) {
   this.val = (val===undefined ? 0 : val)
+  this.key = (key===undefined ? 0 : key)
   this.next = (next===undefined ? null : next)
+  this.pre = (pre===undefined ? null : pre)
+}
+function DoubleListNode() {
+  this.head = new ListNode()
+  this.end = new ListNode()
+  this.head.next = this.end
+  this.end.pre = this.head
+}
+DoubleListNode.prototype.add = function(node) {
+  node.next = this.head.next
+  this.head.next.pre = node
+  node.pre = this.head
+  this.head.next = node
+}
+DoubleListNode.prototype.deleteEnd = function() {
+  let deleteNode = this.end.pre
+  deleteNode.pre.next = this.end
+  this.end.pre = deleteNode.pre
+  return deleteNode
+}
+DoubleListNode.prototype.updateLink = function(node) {
+  node.pre.next = node.next
+  node.next.pre = node.pre
+  this.add(node)
 }
 var LRUCache = function(capacity) {
   this.maxCapacity = capacity
   this.currentLength = 0
   this.capacityMap = new Map()
-  this.stack = []
+  this.doubleListNode = new DoubleListNode()
 };
-LRUCache.prototype.updateStack = function(key) {
-  if (this.stack.includes(key)) {
-    this.stack.splice(this.stack.indexOf(key), 1)
-  }
-  this.stack.push(key)
-}
 /** 
  * @param {number} key
  * @return {number}
  */
 LRUCache.prototype.get = function(key) {
   if (this.capacityMap.has(key)) {
-    this.updateStack(key)
-    return this.capacityMap.get(key)
-  } else {
-    return -1
+    let node = this.capacityMap.get(key)
+    this.doubleListNode.updateLink(node)
+    return node.val
   }
+  return -1
 };
-
 /** 
  * @param {number} key 
  * @param {number} value
@@ -44,21 +62,25 @@ LRUCache.prototype.get = function(key) {
  */
 LRUCache.prototype.put = function(key, value) {
   if (this.capacityMap.has(key)) {
-    this.updateStack(key)
-    this.capacityMap.set(key, value)
+    let node = this.capacityMap.get(key)
+    node.val = value
+    this.doubleListNode.updateLink(node)
   } else {
-    if (this.currentLength === this.maxCapacity) {
-      let oldKey = this.stack.shift()
-      this.stack.push(key)
-      this.capacityMap.delete(oldKey)
-      this.capacityMap.set(key, value)
-    } else {
+    let node = new ListNode(value, key)
+    this.doubleListNode.add(node)
+    this.capacityMap.set(key, node)
+    if (this.currentLength < this.maxCapacity) {
       this.currentLength++
-      this.updateStack(key)
-      this.capacityMap.set(key, value)
+    } else {
+      this.capacityMap.delete(this.doubleListNode.deleteEnd().key)
     }
   }
 };
+
+
+/* 
+也可利用 ES6 Map类型的特性 新加的属性会自动添加到keys的第一位 进行操作
+*/
 
 /**
  * Your LRUCache object will be instantiated and called as such:
